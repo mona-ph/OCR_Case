@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  createdAt DateTime   @default(now())
+
+  documents Document[]
+  threads   ChatThread[]
+}
+
+model Document {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  storagePath  String
+  createdAt    DateTime  @default(now())
+
+  ocr          OcrResult?
+  threads      ChatThread[]
+}
+
+model OcrResult {
+  id         String    @id @default(cuid())
+  documentId String    @unique
+  document   Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  text       String
+  createdAt  DateTime  @default(now())
+}
+
+model ChatThread {
+  id         String       @id @default(cuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  documentId String
+  document   Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime     @default(now())
+  messages   ChatMessage[]
+}
+
+model ChatMessage {
+  id        String    @id @default(cuid())
+  threadId  String
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  role      ChatRole
+  content   String
+  createdAt DateTime  @default(now())
+}
+
+enum ChatRole {
+  user
+  assistant
+}
+
