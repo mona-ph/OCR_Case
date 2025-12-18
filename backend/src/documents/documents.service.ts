@@ -155,11 +155,10 @@ async exportPdfForUser(userId: string, documentId: string) {
   linesToPrint.push('=== CHAT ===');
 
   for (const thread of doc.threads) {
-    linesToPrint.push(`-- Thread ${thread.id} --`);
     for (const m of thread.messages) {
       linesToPrint.push(`[${m.role}] ${m.content}`);
     }
-    linesToPrint.push('');
+    linesToPrint.push(''); // blank line between threads
   }
 
   // IMPORTANT: handle Windows CRLF too

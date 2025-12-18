@@ -13,6 +13,10 @@ async function bootstrap() {
     }),
   );
 
+  app.enableCors({
+    origin: ['http://localhost:3001'],
+  });
+
   app.enableShutdownHooks();
 
   await app.listen(process.env.PORT ? Number(process.env.PORT) : 3000);
