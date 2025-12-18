@@ -1,10 +1,12 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ChatRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { LlmService } from '../llm/llm.service';
+
 
 @Injectable()
 export class ChatsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private llm: LlmService) {}
 
   // Ensures doc exists and belongs to the user
   private async assertDocumentOwnership(userId: string, documentId: string) {
@@ -47,14 +49,19 @@ export class ChatsService {
       },
     });
 
-    // 2) generate assistant reply (placeholder for now)
-    // Later we’ll call the LLM using OCR text as context.
-    const ocrText = thread.document.ocr?.text ?? '';
-    const assistantContent =
-      `I received your message.\n\n` +
-      `Document OCR preview:\n` +
-      `${ocrText.slice(0, 300)}${ocrText.length > 300 ? '...' : ''}`;
+    const ocrText = thread.document.ocr?.text?.trim() ?? '';
 
+    let assistantContent: string;
+
+    try {
+      assistantContent = await this.llm.answerInvoiceQuestion({
+        ocrText,
+        question: content,
+      });
+    } catch (e) {
+      assistantContent =
+        "I'm having trouble generating an answer right now. Please try again.";
+    }
     // 3) store assistant message
     const assistantMsg = await this.prisma.chatMessage.create({
       data: {
