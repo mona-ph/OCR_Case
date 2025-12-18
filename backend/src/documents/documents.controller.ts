@@ -68,4 +68,19 @@ async download(@Param('id') id: string, @CurrentUser() user: AuthUser, @Res() re
 
   return res.download(filePath, doc.originalName);
 }
+
+@Get(':id/export')
+async exportPdf(
+  @Param('id') id: string,
+  @CurrentUser() user: AuthUser,
+  @Res() res: Response,
+) {
+  const pdfBytes = await this.documentsService.exportPdfForUser(user.id, id);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', 'attachment; filename="document-export.pdf"');
+  return res.send(Buffer.from(pdfBytes));
 }
+}
+
+
