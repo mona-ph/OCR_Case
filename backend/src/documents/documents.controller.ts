@@ -2,10 +2,13 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   UseGuards,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Param,
+  Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -14,7 +17,6 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthUser } from '../auth/current-user.decorator';
 import { DocumentsService } from './documents.service';
-import { Param, Res } from '@nestjs/common';
 import type { Response } from 'express';
 
 function fileName(_req: any, file: Express.Multer.File, cb: any) {
@@ -46,9 +48,11 @@ export class DocumentsController {
       limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
     }),
   )
-  async upload(@UploadedFile() file: Express.Multer.File, @CurrentUser() user: AuthUser) {
+  async upload(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: AuthUser,
+  ) {
     if (!file) throw new BadRequestException('File is required');
-
     return this.documentsService.createAndOcr(user.id, file);
   }
 
@@ -57,30 +61,48 @@ export class DocumentsController {
     return this.documentsService.listForUser(user.id);
   }
 
+  @Delete()
+  async clearAll(@CurrentUser() user: AuthUser) {
+    return this.documentsService.deleteAllForUser(user.id);
+  }
+
+  @Delete(':id/chat')
+  async clearChat(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.documentsService.deleteChatForDocument(user.id, id);
+  }
+
   @Get(':id')
-async getOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-  return this.documentsService.getForUser(user.id, id);
+  async getOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.documentsService.getForUser(user.id, id);
+  }
+
+  @Get(':id/file')
+  async download(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Res() res: Response,
+  ) {
+    const { doc, filePath } = await this.documentsService.getFileForUser(
+      user.id,
+      id,
+    );
+
+    return res.download(filePath, doc.originalName);
+  }
+
+  @Get(':id/export')
+  async exportPdf(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Res() res: Response,
+  ) {
+    const pdfBytes = await this.documentsService.exportPdfForUser(user.id, id);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="document-export.pdf"',
+    );
+    return res.send(Buffer.from(pdfBytes));
+  }
 }
-
-@Get(':id/file')
-async download(@Param('id') id: string, @CurrentUser() user: AuthUser, @Res() res: Response) {
-  const { doc, filePath } = await this.documentsService.getFileForUser(user.id, id);
-
-  return res.download(filePath, doc.originalName);
-}
-
-@Get(':id/export')
-async exportPdf(
-  @Param('id') id: string,
-  @CurrentUser() user: AuthUser,
-  @Res() res: Response,
-) {
-  const pdfBytes = await this.documentsService.exportPdfForUser(user.id, id);
-
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', 'attachment; filename="document-export.pdf"');
-  return res.send(Buffer.from(pdfBytes));
-}
-}
-
-
