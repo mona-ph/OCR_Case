@@ -101,3 +101,9 @@ Chat page
 Exported PDF example
 
 I also added to this folder 1 exported PDF file after some chat interactions and the file used for this test.
+
+### Deployment
+- Frontend: https://ocr-case.vercel.app
+- Backend: https://ocr-case-backend.onrender.com
+
+Note: On Render free tier, the backend may take ~30–50 seconds to wake up after inactivity.
