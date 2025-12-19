@@ -44,10 +44,15 @@ docker compose up -d
 ### 2) Backend setup
 # open a new terminal
 cd backend
+
 cp .env.example .env
+
 npm install
+
 npx prisma generate
+
 npx prisma migrate dev
+
 npm run start:dev
 
 ## Notes
@@ -66,8 +71,11 @@ npm run start:dev
 ### 3) Frontend setup
 # open a new terminal
 cd frontend
+
 cp .env.local.example .env.local
+
 npm install
+
 npm run dev
 
 ### Notes
